@@ -100,6 +100,13 @@
 
 <div class="game-wrapper">
     <div class="game-content">
+        <button class="action-btn" on:click={getBookResponse}>Place Bet</button>
+        <button class="action-btn" on:click={endRound}>End Round</button>
+        <h2>Balance: {$balance}</h2>
+        <h2>Round Win: {$lastWin}</h2>
+    </div>
+
+    <div class="bet-bar-fixed">
         <div class="bet-bar">
             <button
                 class="bet-btn"
@@ -123,10 +130,6 @@
                     )}>+</button
             >
         </div>
-        <button class="action-btn" on:click={getBookResponse}>Place Bet</button>
-        <button class="action-btn" on:click={endRound}>End Round</button>
-        <h2>Balance: {$balance}</h2>
-        <h2>Round Win: {$lastWin}</h2>
     </div>
 
     {#if $showModal}
@@ -187,11 +190,26 @@
         background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
     }
 
+    .bet-bar-fixed {
+        position: fixed;
+        left: 50%;
+        bottom: 0.5em;
+        transform: translateX(-50%);
+        z-index: 200;
+        width: max-content;
+        max-width: 60em;
+        display: flex;
+        justify-content: center;
+        pointer-events: auto;
+    }
     .bet-bar {
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1em;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 1em;
+        box-shadow: 0 0.125em 1em rgba(0, 0, 0, 0.12);
+        padding: 0.5em 1em;
     }
     .bet-btn {
         background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
@@ -203,7 +221,7 @@
         font-size: 1.5em;
         font-weight: bold;
         margin: 0 0.5em;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 0.125em 0.5em rgba(0, 0, 0, 0.12);
         cursor: pointer;
         transition:
             transform 0.1s,
@@ -240,8 +258,8 @@
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         background: rgba(0, 0, 0, 0.3);
         z-index: 100;
     }
@@ -250,18 +268,18 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+        background: hsl(0, 0%, 50%);
+        border-radius: 1em;
+        box-shadow: 0 0.5em 2em rgba(0, 0, 0, 0.18);
         padding: 2em;
         z-index: 101;
-        min-width: 320px;
-        max-width: 90vw;
+        min-width: 20em;
+        max-width: 60em;
     }
     .bet-modal h3 {
         margin-top: 0;
         margin-bottom: 1em;
-        color: #0072ff;
+        color: #000000;
         font-size: 1.2em;
         font-weight: 700;
         text-align: center;
