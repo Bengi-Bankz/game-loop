@@ -3,6 +3,7 @@
     import { writable } from "svelte/store";
     import WinModal from "./WinModal.svelte";
     import MenuModal from "./MenuModal.svelte";
+    import DiamondSelector from "./DiamondSelector.svelte";
 
     const API_MULTIPLIER = 1000000;
     const gamestate = writable("rest");
@@ -133,6 +134,7 @@
     <div class="game-content">
         <h2>Balance: {Number($balance).toFixed(2)}</h2>
         <h2>Round Win: {$lastWin}</h2>
+        <DiamondSelector />
     </div>
 
     <div class="bet-bar-fixed">
