@@ -10,13 +10,11 @@
     <div class="win-modal">
         <h2>Congratulations!</h2>
         <div class="win-info">
-            <div><strong>Amount Won:</strong> ${amountWon.toFixed(2)}</div>
+            <div><strong>Won:</strong> ${amountWon.toFixed(2)}</div>
             <div>
-                <strong>Payout Multiplier:</strong> x{payoutMultiplier.toFixed(
-                    2,
-                )}
+                <strong>Multiplier:</strong> x{payoutMultiplier.toFixed(2)}
             </div>
-            <div><strong>Bet Amount:</strong> ${betAmount.toFixed(2)}</div>
+            <div><strong>Amount:</strong> ${betAmount.toFixed(2)}</div>
         </div>
         <slot></slot>
     </div>
@@ -37,7 +35,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: #fff;
+        background: #60c053;
         border-radius: 1em;
         box-shadow: 0 0.5em 2em rgba(0, 0, 0, 0.18);
         padding: 2em 3em;
@@ -47,12 +45,12 @@
         text-align: center;
     }
     .win-modal h2 {
-        color: #0072ff;
+        color: #000000;
         margin-bottom: 1em;
-        font-size: 2em;
+        font-size: 1em;
     }
     .win-info {
-        font-size: 1.2em;
+        font-size: 2em;
         margin-bottom: 1.5em;
     }
     .win-info div {
