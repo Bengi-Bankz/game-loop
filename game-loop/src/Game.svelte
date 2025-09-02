@@ -3,7 +3,6 @@
     import { writable } from "svelte/store";
     import WinModal from "./WinModal.svelte";
     import MenuModal from "./MenuModal.svelte";
-    import DiamondSelector from "./DiamondSelector.svelte";
 
     const API_MULTIPLIER = 1000000;
     const gamestate = writable("rest");
@@ -54,6 +53,41 @@
     // --- BET BAR STATE ---
     const betAmount = writable(1);
     const showModal = writable(false);
+
+    // --- AUTO PLAY STATE ---
+    const showAutoModal = writable(false);
+    const autoRounds = writable(0);
+    const autoCountdown = writable(0);
+    const autoRunning = writable(false);
+
+    // Get selected diamond from DiamondSelector
+    import DiamondSelector from "./DiamondSelector.svelte";
+    let selectedDiamond = 0;
+    function handleDiamondSelect(event: CustomEvent<number>) {
+        selectedDiamond = event.detail;
+    }
+
+    // Auto-play logic
+    async function runAutoPlay(rounds: number) {
+        autoRunning.set(true);
+        autoCountdown.set(rounds);
+        for (let i = 0; i < rounds; i++) {
+            autoCountdown.set(rounds - i);
+            // Use selectedDiamond in your bet logic here
+            // e.g., pass selectedDiamond as cup choice to getBookResponse or future cup logic
+            await getBookResponse();
+            let win = 0;
+            lastWin.subscribe((v) => (win = v ?? 0))();
+            if (win > 0) {
+                showWinModal.set(true);
+                await new Promise((resolve) => setTimeout(resolve, 1200));
+                await endRound();
+            }
+            await new Promise((resolve) => setTimeout(resolve, 600));
+        }
+        autoRunning.set(false);
+        autoCountdown.set(0);
+    }
 
     // Logical step function for bet increments
     function step(val: number) {
@@ -134,15 +168,28 @@
     <div class="game-content">
         <h2>Balance: {Number($balance).toFixed(2)}</h2>
         <h2>Round Win: {$lastWin}</h2>
-        <DiamondSelector />
+        <DiamondSelector on:select={handleDiamondSelect} />
     </div>
 
     <div class="bet-bar-fixed">
         <div class="bet-bar-controls">
-            <button class="action-btn" on:click={getBookResponse}
-                >Place Bet</button
+            <button
+                class="action-btn"
+                on:click={getBookResponse}
+                disabled={$autoRunning}>Place Bet</button
             >
             <button class="action-btn" on:click={endRound}>End Round</button>
+            <button
+                class="action-btn"
+                on:click={() => showAutoModal.set(true)}
+                disabled={$autoRunning}
+            >
+                {#if $autoRunning}
+                    {$autoCountdown}
+                {:else}
+                    Auto
+                {/if}
+            </button>
         </div>
         <div class="bet-bar">
             <button
@@ -150,21 +197,23 @@
                 on:click={() =>
                     betAmount.update((b) =>
                         Math.max(0.1, +(b - step(b)).toFixed(2)),
-                    )}>-</button
+                    )}
+                disabled={$autoRunning}>-</button
             >
             <button
                 class="bet-amount"
                 type="button"
                 aria-label="Select bet amount"
                 on:click={() => showModal.set(true)}
-                >{$betAmount.toFixed(2)}</button
+                disabled={$autoRunning}>{$betAmount.toFixed(2)}</button
             >
             <button
                 class="bet-btn"
                 on:click={() =>
                     betAmount.update((b) =>
                         Math.min(1000, +(b + step(b)).toFixed(2)),
-                    )}>+</button
+                    )}
+                disabled={$autoRunning}>+</button
             >
         </div>
     </div>
@@ -186,6 +235,30 @@
                             betAmount.set(+option);
                             showModal.set(false);
                         }}>{(+option).toFixed(2)}</button
+                    >
+                {/each}
+            </div>
+        </div>
+    {/if}
+
+    {#if $showAutoModal}
+        <button
+            class="modal-backdrop"
+            type="button"
+            aria-label="Close auto modal"
+            on:click={() => showAutoModal.set(false)}
+        ></button>
+        <div class="bet-modal">
+            <h3>Auto Play Rounds</h3>
+            <div class="bet-options">
+                {#each [5, 10, 20, 50, 100] as rounds}
+                    <button
+                        class="bet-option-btn"
+                        on:click={() => {
+                            autoRounds.set(rounds);
+                            showAutoModal.set(false);
+                            runAutoPlay(rounds);
+                        }}>{rounds}</button
                     >
                 {/each}
             </div>

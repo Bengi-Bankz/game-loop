@@ -1,12 +1,12 @@
 <script>
-    import { onMount, onDestroy } from "svelte";
+    import { onMount, onDestroy, createEventDispatcher } from "svelte";
     let selected = 0;
+    const dispatch = createEventDispatcher();
     const diamonds = [0, 1, 2];
 
     function selectDiamond(idx) {
         selected = idx;
-        // Dispatch event to parent if needed
-        // dispatch('select', { selected });
+        dispatch("select", selected);
     }
 
     function handleGlobalKeydown(e) {
