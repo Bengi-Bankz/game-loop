@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { writable } from "svelte/store";
+    import WinModal from "./WinModal.svelte";
 
     const API_MULTIPLIER = 1000000;
     const gamestate = writable("rest");
@@ -8,6 +9,11 @@
     const endRoundResponse = writable<any>(null);
     const balance = writable(1000);
     const lastWin = writable(0);
+
+    // Win modal state
+    const showWinModal = writable(false);
+    const winAmount = writable(0);
+    const winMultiplier = writable(0);
 
     const getParam = (key: string) =>
         new URLSearchParams(window.location.search).get(key);
@@ -86,6 +92,15 @@
         gamestate.set("playing");
         if (resp != null) {
             lastWin.set(resp.round.payoutMultiplier);
+            // Show win modal if payoutMultiplier > 0
+            if (
+                resp.round.payoutMultiplier &&
+                resp.round.payoutMultiplier > 0
+            ) {
+                winMultiplier.set(resp.round.payoutMultiplier);
+                winAmount.set($betAmount * resp.round.payoutMultiplier);
+                showWinModal.set(true);
+            }
         }
         let lw;
         lastWin.subscribe((value) => (lw = value))();
@@ -158,6 +173,19 @@
             </div>
         </div>
     {/if}
+
+    <WinModal
+        amountWon={$winAmount}
+        payoutMultiplier={$winMultiplier}
+        betAmount={$betAmount}
+        show={$showWinModal}
+    >
+        <button
+            class="action-btn"
+            style="margin-top:1em;"
+            on:click={() => showWinModal.set(false)}>Close</button
+        >
+    </WinModal>
 
     <div class="json-stack">
         <h3>play/ response</h3>
