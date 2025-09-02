@@ -40,17 +40,38 @@
         }
     };
 
+    // --- BET BAR STATE ---
+    const betAmount = writable(1);
+    const showModal = writable(false);
+
+    // Logical step function for bet increments
+    function step(val: number) {
+        if (val < 1) return 0.10;
+        if (val < 10) return 0.20;
+        if (val < 100) return 1;
+        if (val < 500) return 5;
+        return 10;
+    }
+
+    // Generate bet options
+    const betOptions = [
+        ...Array.from({length: 10}, (_,i) => +(0.1*(i+1)).toFixed(2)), // 0.10 to 1.00
+        ...Array.from({length: 10}, (_,i) => +(1 + 0.2*i).toFixed(2)), // 1.00 to 2.80
+        ...Array.from({length: 8}, (_,i) => +(3 + i).toFixed(2)),      // 3 to 10
+        12, 15, 20, 25, 50, 100, 200, 500, 1000
+    ];
+
     async function getBookResponse() {
         let gs;
         gamestate.subscribe((value) => (gs = value))();
         if (gs == "rest") {
-            balance.update((b) => b - 1);
+            balance.update((b) => b - $betAmount);
         }
         const resp = await getRGSResponse("/wallet/play", {
             mode: getParam("mode") ?? "BASE",
             currency: getParam("currency"),
             sessionID: getParam("sessionID"),
-            amount: 1 * API_MULTIPLIER,
+            amount: $betAmount * API_MULTIPLIER,
         });
         endRoundResponse.set(null);
         response.set(resp);
@@ -69,13 +90,31 @@
     }
 </script>
 
+
 <div class="game-wrapper">
     <div class="game-content">
-        <button on:click={getBookResponse}>Place Bet</button>
-        <button on:click={endRound}>End Round</button>
+        <div class="bet-bar">
+            <button class="bet-btn" on:click={() => betAmount.update(b => Math.max(0.1, +(b - step(b)).toFixed(2)))}>-</button>
+            <button class="bet-amount" type="button" aria-label="Select bet amount" on:click={() => showModal.set(true)}>{$betAmount.toFixed(2)}</button>
+            <button class="bet-btn" on:click={() => betAmount.update(b => Math.min(1000, +(b + step(b)).toFixed(2)))}>+</button>
+        </div>
+        <button class="action-btn" on:click={getBookResponse}>Place Bet</button>
+        <button class="action-btn" on:click={endRound}>End Round</button>
         <h2>Balance: {$balance}</h2>
         <h2>Round Win: {$lastWin}</h2>
     </div>
+
+    {#if $showModal}
+    <button class="modal-backdrop" type="button" aria-label="Close bet modal" on:click={() => showModal.set(false)}></button>
+        <div class="bet-modal">
+            <h3>Select Bet Amount</h3>
+            <div class="bet-options">
+                {#each betOptions as option}
+                    <button class="bet-option-btn" on:click={() => { betAmount.set(+option); showModal.set(false); }}>{(+option).toFixed(2)}</button>
+                {/each}
+            </div>
+        </div>
+    {/if}
 
     <div class="json-stack">
         <h3>play/ response</h3>
@@ -89,3 +128,126 @@
         </div>
     </div>
 </div>
+
+<style>
+    .action-btn {
+        background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75em 2em;
+        margin: 0.5em;
+        font-size: 1.1em;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .action-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
+    }
+
+    .bet-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1em;
+    }
+    .bet-btn {
+        background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 2.5em;
+        height: 2.5em;
+        font-size: 1.5em;
+        font-weight: bold;
+        margin: 0 0.5em;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bet-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
+    }
+    .bet-amount {
+        background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
+        color: #fff;
+        border-radius: 8px;
+        padding: 0.5em 1.5em;
+        font-size: 1.2em;
+        font-weight: 700;
+        margin: 0 0.5em;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        border: 2px solid #fff2;
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .bet-amount:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    }
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.3);
+        z-index: 100;
+    }
+    .bet-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        padding: 2em;
+        z-index: 101;
+        min-width: 320px;
+        max-width: 90vw;
+    }
+    .bet-modal h3 {
+        margin-top: 0;
+        margin-bottom: 1em;
+        color: #0072ff;
+        font-size: 1.2em;
+        font-weight: 700;
+        text-align: center;
+    }
+    .bet-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5em;
+        justify-content: center;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .bet-option-btn {
+        background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5em 1em;
+        font-size: 1em;
+        font-weight: 600;
+        margin: 0.2em;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .bet-option-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
+    }
+</style>
