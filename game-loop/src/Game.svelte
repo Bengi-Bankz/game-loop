@@ -11,6 +11,11 @@
     const balance = writable(1000);
     const lastWin = writable(0);
 
+    // Cup game specific state
+    const cupGameState = writable<"betting" | "shuffling" | "selecting" | "revealing">("betting");
+    const selectedCup = writable(-1);
+    const winningCup = writable(-1);
+
     // Win modal state
     const showWinModal = writable(false);
     const winAmount = writable(0);
@@ -67,6 +72,46 @@
         selectedDiamond = event.detail;
     }
 
+    // Cup game integration
+    function startCupGame() {
+        cupGameState.set("shuffling");
+        // Dispatch event to PixiJS
+        window.dispatchEvent(new CustomEvent("gameStateChange", { detail: "shuffling" }));
+        
+        // Simulate shuffling for 3 seconds
+        setTimeout(() => {
+            cupGameState.set("selecting");
+            window.dispatchEvent(new CustomEvent("gameStateChange", { detail: "selecting" }));
+        }, 3000);
+    }
+
+    function handleCupSelection(cupIndex: number) {
+        selectedCup.set(cupIndex);
+        cupGameState.set("revealing");
+        window.dispatchEvent(new CustomEvent("gameStateChange", { detail: "revealing" }));
+        
+        // Simulate game result after revealing
+        setTimeout(async () => {
+            await endRound();
+            cupGameState.set("betting");
+            selectedCup.set(-1);
+            window.dispatchEvent(new CustomEvent("gameStateChange", { detail: "betting" }));
+        }, 2000);
+    }
+
+    // Listen for cup selection from PixiJS
+    onMount(() => {
+        const handlePixiCupSelected = (event: CustomEvent<number>) => {
+            handleCupSelection(event.detail);
+        };
+        
+        window.addEventListener("pixiCupSelected" as any, handlePixiCupSelected);
+        
+        return () => {
+            window.removeEventListener("pixiCupSelected" as any, handlePixiCupSelected);
+        };
+    });
+
     // Auto-play logic
     async function runAutoPlay(rounds: number) {
         autoRunning.set(true);
@@ -119,6 +164,8 @@
         gamestate.subscribe((value) => (gs = value))();
         if (gs == "rest") {
             balance.update((b) => b - $betAmount);
+            // Start the cup game sequence
+            startCupGame();
         }
         const resp = await getRGSResponse("/wallet/play", {
             mode: getParam("mode") ?? "BASE",
@@ -131,6 +178,8 @@
         gamestate.set("playing");
         if (resp != null) {
             lastWin.set(resp.round.payoutMultiplier);
+            // Store the winning cup (random for now, could be determined by server)
+            winningCup.set(Math.floor(Math.random() * 3));
             // Show win modal if payoutMultiplier > 0
             if (
                 resp.round.payoutMultiplier &&
@@ -168,6 +217,20 @@
     <div class="game-content">
         <h2>Balance: {Number($balance).toFixed(2)}</h2>
         <h2>Round Win: {$lastWin}</h2>
+        
+        <!-- Game State Indicator -->
+        <div class="game-state">
+            {#if $cupGameState === "betting"}
+                <p>Place your bet and select a diamond to start!</p>
+            {:else if $cupGameState === "shuffling"}
+                <p>🔄 Shuffling cups...</p>
+            {:else if $cupGameState === "selecting"}
+                <p>👆 Select a cup below!</p>
+            {:else if $cupGameState === "revealing"}
+                <p>🎉 Revealing result...</p>
+            {/if}
+        </div>
+        
         <DiamondSelector on:select={handleDiamondSelect} />
     </div>
 
@@ -176,13 +239,16 @@
             <button
                 class="action-btn"
                 on:click={getBookResponse}
-                disabled={$autoRunning}>Place Bet</button
+                disabled={$autoRunning || $cupGameState !== "betting"}>Place Bet</button
             >
-            <button class="action-btn" on:click={endRound}>End Round</button>
+            <button 
+                class="action-btn" 
+                on:click={endRound}
+                disabled={$cupGameState !== "betting"}>End Round</button>
             <button
                 class="action-btn"
                 on:click={() => showAutoModal.set(true)}
-                disabled={$autoRunning}
+                disabled={$autoRunning || $cupGameState !== "betting"}
             >
                 {#if $autoRunning}
                     {$autoCountdown}
@@ -198,14 +264,14 @@
                     betAmount.update((b) =>
                         Math.max(0.1, +(b - step(b)).toFixed(2)),
                     )}
-                disabled={$autoRunning}>-</button
+                disabled={$autoRunning || $cupGameState !== "betting"}>-</button
             >
             <button
                 class="bet-amount"
                 type="button"
                 aria-label="Select bet amount"
                 on:click={() => showModal.set(true)}
-                disabled={$autoRunning}>{$betAmount.toFixed(2)}</button
+                disabled={$autoRunning || $cupGameState !== "betting"}>{$betAmount.toFixed(2)}</button
             >
             <button
                 class="bet-btn"
@@ -213,7 +279,7 @@
                     betAmount.update((b) =>
                         Math.min(1000, +(b + step(b)).toFixed(2)),
                     )}
-                disabled={$autoRunning}>+</button
+                disabled={$autoRunning || $cupGameState !== "betting"}>+</button
             >
         </div>
     </div>
@@ -473,5 +539,22 @@
         transform: scale(1.08);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
         background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
+    }
+    
+    .game-state {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1em;
+        margin: 1em 0;
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .game-content {
+        padding: 0 1em;
+        text-align: center;
     }
 </style>

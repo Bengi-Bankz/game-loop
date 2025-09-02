@@ -1,6 +1,7 @@
-import { Application, extend, useApplication, useTick } from "@pixi/react";
-import { Assets, Container, Sprite, Texture } from "pixi.js";
-import { useEffect, useRef, useState } from "react";
+import { Application, extend } from "@pixi/react";
+import { Container, Sprite } from "pixi.js";
+import { useState, useEffect } from "react";
+import { CupGame } from "./CupGame";
 
 // extend tells @pixi/react what Pixi.js components are available
 extend({
@@ -8,38 +9,47 @@ extend({
   Sprite,
 });
 
-const BunnySprite = () => {
-  const { app } = useApplication();
+type GameState = "betting" | "shuffling" | "selecting" | "revealing";
 
-  // The Pixi.js `Sprite`
-  const spriteRef = useRef<Sprite>(null);
-  const [texture, setTexture] = useState(Texture.EMPTY);
+const GameCanvas = () => {
+  const [gameState, setGameState] = useState<GameState>("betting");
+  const [selectedCup, setSelectedCup] = useState(-1);
 
-  // Preload the sprite if it hasn't been loaded yet
+  // Listen for game state changes from Svelte overlay
   useEffect(() => {
-    if (texture === Texture.EMPTY) {
-      Assets.load("/assets/bunny.png").then((result) => {
-        setTexture(result);
-      });
-    }
-  }, [texture]);
+    const handleGameState = (event: Event) => {
+      const customEvent = event as CustomEvent<GameState>;
+      setGameState(customEvent.detail);
+    };
 
-  // Listen for animate update
-  useTick((ticker) => {
-    if (!spriteRef.current) return;
-    // Just for fun, let's rotate mr rabbit a little.
-    // * Delta is 1 if running at 100% performance *
-    // * Creates frame-independent transformation *
-    spriteRef.current.rotation += 0.1 * ticker.deltaTime;
-  });
+    const handleCupSelection = (event: Event) => {
+      const customEvent = event as CustomEvent<number>;
+      setSelectedCup(customEvent.detail);
+    };
+
+    // Listen for custom events from Svelte
+    window.addEventListener("gameStateChange", handleGameState);
+    window.addEventListener("cupSelection", handleCupSelection);
+
+    return () => {
+      window.removeEventListener("gameStateChange", handleGameState);
+      window.removeEventListener("cupSelection", handleCupSelection);
+    };
+  }, []);
+
+  const handleCupSelect = (cupIndex: number) => {
+    setSelectedCup(cupIndex);
+    // Notify Svelte overlay about cup selection
+    window.dispatchEvent(
+      new CustomEvent("pixiCupSelected", { detail: cupIndex }),
+    );
+  };
 
   return (
-    <pixiSprite
-      ref={spriteRef}
-      texture={texture}
-      anchor={0.5}
-      x={app.screen.width / 2}
-      y={app.screen.height / 2}
+    <CupGame
+      selectedCup={selectedCup}
+      gameState={gameState}
+      onCupSelect={handleCupSelect}
     />
   );
 };
@@ -49,7 +59,7 @@ export default function App() {
     // We'll wrap our components with an <Application> component to provide
     // the Pixi.js Application context
     <Application background={"#1099bb"} resizeTo={window}>
-      <BunnySprite />
+      <GameCanvas />
     </Application>
   );
 }
