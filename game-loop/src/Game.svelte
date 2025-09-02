@@ -115,7 +115,7 @@
 
 <div class="game-wrapper">
     <div class="game-content">
-        <h2>Balance: {$balance}</h2>
+        <h2>Balance: {Number($balance).toFixed(2)}</h2>
         <h2>Round Win: {$lastWin}</h2>
     </div>
 
