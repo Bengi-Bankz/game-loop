@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { writable } from "svelte/store";
     import WinModal from "./WinModal.svelte";
+    import MenuModal from "./MenuModal.svelte";
 
     const API_MULTIPLIER = 1000000;
     const gamestate = writable("rest");
@@ -14,6 +15,9 @@
     const showWinModal = writable(false);
     const winAmount = writable(0);
     const winMultiplier = writable(0);
+
+    // Menu modal state
+    const showMenuModal = writable(false);
 
     const getParam = (key: string) =>
         new URLSearchParams(window.location.search).get(key);
@@ -114,6 +118,18 @@
 </script>
 
 <div class="game-wrapper">
+    <button
+        class="menu-btn"
+        type="button"
+        aria-label="Menu"
+        on:click={() => showMenuModal.set(!$showMenuModal)}
+    >
+        {#if $showMenuModal}
+            ×
+        {:else}
+            &#9776;
+        {/if}
+    </button>
     <div class="game-content">
         <h2>Balance: {Number($balance).toFixed(2)}</h2>
         <h2>Round Win: {$lastWin}</h2>
@@ -186,6 +202,11 @@
             on:click={() => showWinModal.set(false)}>Close</button
         >
     </WinModal>
+
+    <MenuModal show={$showMenuModal} onClose={() => showMenuModal.set(false)}>
+        <!-- Add menu content here -->
+        <div style="margin-bottom:1em;">Menu content goes here.</div>
+    </MenuModal>
 
     <div class="json-stack">
         <h3>play/ response</h3>
@@ -347,6 +368,33 @@
             box-shadow 0.1s;
     }
     .bet-option-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+        background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
+    }
+    .menu-btn {
+        position: fixed;
+        top: 1em;
+        right: 1em;
+        z-index: 500;
+        background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
+        color: #fff;
+        border: none;
+        border-radius: 16%;
+        width: 2em;
+        height: 2em;
+        font-size: 2em;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+            transform 0.1s,
+            box-shadow 0.1s;
+    }
+    .menu-btn:hover {
         transform: scale(1.08);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
         background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
