@@ -100,13 +100,17 @@
 
 <div class="game-wrapper">
     <div class="game-content">
-        <button class="action-btn" on:click={getBookResponse}>Place Bet</button>
-        <button class="action-btn" on:click={endRound}>End Round</button>
         <h2>Balance: {$balance}</h2>
         <h2>Round Win: {$lastWin}</h2>
     </div>
 
     <div class="bet-bar-fixed">
+        <div class="bet-bar-controls">
+            <button class="action-btn" on:click={getBookResponse}
+                >Place Bet</button
+            >
+            <button class="action-btn" on:click={endRound}>End Round</button>
+        </div>
         <div class="bet-bar">
             <button
                 class="bet-btn"
@@ -199,8 +203,15 @@
         width: max-content;
         max-width: 60em;
         display: flex;
-        justify-content: center;
+        flex-direction: column;
+        align-items: center;
         pointer-events: auto;
+    }
+    .bet-bar-controls {
+        display: flex;
+        justify-content: center;
+        gap: 1em;
+        margin-bottom: 0.5em;
     }
     .bet-bar {
         display: flex;
@@ -216,8 +227,8 @@
         color: #fff;
         border: none;
         border-radius: 50%;
-        width: 2.5em;
-        height: 2.5em;
+        width: 1.5em;
+        height: 1.5em;
         font-size: 1.5em;
         font-weight: bold;
         margin: 0 0.5em;
